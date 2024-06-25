@@ -19,14 +19,16 @@ const adminId = process.env.ADMIN_ID;
 const prePrefix = process.env.PREPREFIX;
 const prefix = process.env.PREFIX;
 const ip = process.env.IP_ADDRESS;
-const serverPort = 8000;
-let serverUrl = `https://${ip}:${serverPort}`;
-let privateKey = await loadPrivateKey(pathToPrivateKeyJwkFile);
+const handleServerPort = process.env.HANDLE_SERVER_PORT;
+let serverUrl = `https://${ip}:${handleServerPort}`;
+const pathToHttpsKeyFile = process.env.HTTPS_KEY_FILE_PATH;
+const pathToHttpsPemFile = process.env.HTTPS_PEM_FILE_PATH;
+let privateJwkKey = await loadPrivateKey(pathToPrivateKeyJwkFile);
 
 const auth = {
   adminIndex: 300,
   adminHandle: prePrefix + "/" + prefix,
-  privateKey: privateKey,
+  privateKey: privateJwkKey,
   mode: "HS_PUBKEY",
 };
 
@@ -113,11 +115,23 @@ app.use((err, req, res, next) => {
   next();
 });
 
-app.listen(port, () => {
+const privateKey = fs.readFileSync(pathToHttpsKeyFile, "utf8");
+const certificate = fs.readFileSync(pathToHttpsPemFile, "utf8");
+const credentials = { key: privateKey, cert: certificate };
+const httpsServer = https.createServer(credentials, app);
+const PORT = port || 443;
+
+httpsServer.listen(PORT, () => {
   console.log(
     `Server running at http://localhost:${port}/ for ${ip}, ${pathToPrivateKeyJwkFile}`
   );
 });
+
+// app.listen(port, () => {
+//   console.log(
+//     `Server running at http://localhost:${port}/ for ${ip}, ${pathToPrivateKeyJwkFile}`
+//   );
+// });
 
 // app.get("/update-handle/:handle", async (req, res) => {
 //   const handle = req.params.handle;
