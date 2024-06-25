@@ -10,6 +10,7 @@ dotenv.config();
 
 const app = express();
 const port = 8001;
+const myServerIp = process.env.HANDLE_SERVER_IP_ADDRESS;
 
 app.use(express.json());
 
@@ -18,7 +19,7 @@ const pathToPrivateKeyJwkFile = process.env.PRIVATE_JWK_KEY_PATH;
 const adminId = process.env.ADMIN_ID;
 const prePrefix = process.env.PREPREFIX;
 const prefix = process.env.PREFIX;
-const ip = process.env.IP_ADDRESS;
+const ip = process.env.HANDLE_SERVER_IP_ADDRESS;
 const handleServerPort = process.env.HANDLE_SERVER_PORT;
 let serverUrl = `https://${ip}:${handleServerPort}`;
 const pathToHttpsKeyFile = process.env.HTTPS_KEY_FILE_PATH;
@@ -69,9 +70,9 @@ app.post("/create-handle/:handle", async (req, res) => {
   res.json(createResult);
 });
 
-// GET /create-handle/someHandle?handleUrl=https://example.com
-app.get("/get-handle-info/:handle", async (req, res) => {
-  const handle = req.params.handle;
+// GET /get-handle-info?handleId=123456handleUrl=https://example.com
+app.get("/get-handle-info", async (req, res) => {
+  const handle = req.query.handleId;
   const value = req.query.handleUrl; // Retrieve the value from the query parameters
 
   let handleRestApi = new HandleRestApi(auth, serverUrl);
@@ -121,17 +122,18 @@ const credentials = { key: privateKey, cert: certificate };
 const httpsServer = https.createServer(credentials, app);
 const PORT = port || 443;
 
-httpsServer.listen(PORT, () => {
+httpsServer.listen(PORT, myServerIp, () => {
   console.log(
-    `Server running at http://localhost:${port}/ for ${ip}, ${pathToPrivateKeyJwkFile}`
+    `Server running at https://localhost:${port}/ for Handle Sever: ${ip}, ${pathToPrivateKeyJwkFile}`
   );
 });
 
-// app.listen(port, () => {
-//   console.log(
-//     `Server running at http://localhost:${port}/ for ${ip}, ${pathToPrivateKeyJwkFile}`
-//   );
-// });
+const httpPort = port + 1;
+app.listen(httpPort, myServerIp, () => {
+  console.log(
+    `Server running at http://localhost:${httpPort}/ for Handle Sever: ${ip}, ${pathToPrivateKeyJwkFile}`
+  );
+});
 
 // app.get("/update-handle/:handle", async (req, res) => {
 //   const handle = req.params.handle;
